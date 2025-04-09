@@ -20,8 +20,8 @@ import { Loader2, Search, Filter, X } from 'lucide-react';
 export default function ProductsPage() {
   const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [sortOption, setSortOption] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortOption, setSortOption] = useState<string>('featured');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   // Get category from URL query params if present
@@ -56,7 +56,7 @@ export default function ProductsPage() {
     }
 
     // Filter by category
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all') {
       result = result.filter(product => product.category === selectedCategory);
     }
 
@@ -74,8 +74,9 @@ export default function ProductsPage() {
       case 'name-desc':
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
+      case 'featured':
       default:
-        // By default, sort by featured
+        // Sort by featured
         result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
 
@@ -89,8 +90,8 @@ export default function ProductsPage() {
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('');
-    setSortOption('');
+    setSelectedCategory('all');
+    setSortOption('featured');
   };
 
   return (
@@ -145,7 +146,7 @@ export default function ProductsPage() {
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
@@ -159,7 +160,7 @@ export default function ProductsPage() {
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Featured</SelectItem>
+                      <SelectItem value="featured">Featured</SelectItem>
                       <SelectItem value="price-asc">Price: Low to High</SelectItem>
                       <SelectItem value="price-desc">Price: High to Low</SelectItem>
                       <SelectItem value="name-asc">Name: A to Z</SelectItem>
@@ -190,7 +191,7 @@ export default function ProductsPage() {
                       <div className="bg-neutral-100 text-neutral-800 text-sm py-1 px-3 rounded-full flex items-center">
                         Category: {selectedCategory}
                         <button 
-                          onClick={() => setSelectedCategory('')}
+                          onClick={() => setSelectedCategory('all')}
                           className="ml-2 text-neutral-500 hover:text-neutral-700"
                         >
                           <X size={14} />
@@ -202,7 +203,7 @@ export default function ProductsPage() {
                       <div className="bg-neutral-100 text-neutral-800 text-sm py-1 px-3 rounded-full flex items-center">
                         Sort: {sortOption.replace('-', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase())}
                         <button 
-                          onClick={() => setSortOption('')}
+                          onClick={() => setSortOption('featured')}
                           className="ml-2 text-neutral-500 hover:text-neutral-700"
                         >
                           <X size={14} />
