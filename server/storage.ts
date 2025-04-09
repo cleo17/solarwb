@@ -9,9 +9,12 @@ import type {
   NewsletterSubscription, InsertNewsletterSubscription
 } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { pool } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Interface for CRUD operations
 export interface IStorage {
@@ -63,366 +66,339 @@ export interface IStorage {
   
   // Session store
   sessionStore: session.SessionStore;
+  
+  // Initialize the database schema and seed data
+  initializeDatabase(): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private products: Map<number, Product>;
-  private blogPosts: Map<number, BlogPost>;
-  private orders: Map<number, Order>;
-  private orderItems: Map<number, OrderItem>;
-  private contactSubmissions: Map<number, ContactSubmission>;
-  private newsletterSubscriptions: Map<number, NewsletterSubscription>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
-  
-  private userCurrentId: number;
-  private productCurrentId: number;
-  private blogPostCurrentId: number;
-  private orderCurrentId: number;
-  private orderItemCurrentId: number;
-  private contactSubmissionCurrentId: number;
-  private newsletterSubscriptionCurrentId: number;
 
   constructor() {
-    this.users = new Map();
-    this.products = new Map();
-    this.blogPosts = new Map();
-    this.orders = new Map();
-    this.orderItems = new Map();
-    this.contactSubmissions = new Map();
-    this.newsletterSubscriptions = new Map();
-    
-    this.userCurrentId = 1;
-    this.productCurrentId = 1;
-    this.blogPostCurrentId = 1;
-    this.orderCurrentId = 1;
-    this.orderItemCurrentId = 1;
-    this.contactSubmissionCurrentId = 1;
-    this.newsletterSubscriptionCurrentId = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      tableName: 'sessions',
+      createTableIfMissing: true
     });
     
-    // Add a default super admin
-    this.createUser({
-      username: "admin",
-      password: "$2b$10$wZcXSTiRZmjN2jCWOUyxZuEhkYZM.Mjm2pGQTTAq.kmRZ1BK2rF/C", // password: admin123
-      email: "admin@limpiastech.com",
-      fullName: "Admin User",
-      role: "super_admin"
-    });
-    
-    // Seed some initial products
-    this.seedProducts();
+    // Initialize database schema and seed initial data if needed
+    this.initializeDatabase();
   }
   
-  private seedProducts() {
-    const sampleProducts: InsertProduct[] = [
-      {
-        name: "Premium Solar Panel 400W",
-        description: "High-efficiency monocrystalline solar panel with 25-year performance warranty.",
-        price: 349.99,
-        category: "Solar Panels",
-        imageUrl: "https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        specifications: {
-          power: "400W",
-          efficiency: "21.5%",
-          cells: "144 half-cut monocrystalline cells",
-          dimensions: "2000 x 1000 x 35 mm"
-        },
-        stock: 50,
-        featured: true
-      },
-      {
-        name: "SmartInvert Pro 5kW",
-        description: "Hybrid solar inverter with battery backup capability and smart monitoring.",
-        price: 1299.99,
-        category: "Inverters",
-        imageUrl: "https://images.unsplash.com/photo-1613665813446-82a78c468a1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        specifications: {
-          power: "5kW",
-          efficiency: "98%",
-          mppt: "2 MPPT trackers",
-          warranty: "10 years"
-        },
-        stock: 25,
-        featured: true
-      },
-      {
-        name: "EcoHeat Solar 200L",
-        description: "Evacuated tube solar water heater with 200-liter capacity for residential use.",
-        price: 899.99,
-        category: "Water Heaters",
-        imageUrl: "https://images.unsplash.com/photo-1621267860478-dbad5e247732?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        specifications: {
-          capacity: "200L",
-          tubes: "20 evacuated tubes",
-          tank: "Stainless steel, insulated",
-          mountType: "Roof or ground mounted"
-        },
-        stock: 15,
-        featured: true
-      },
-      {
-        name: "SolarPump 3HP",
-        description: "3HP submersible solar water pump for agriculture and domestic applications.",
-        price: 749.99,
-        category: "Water Pumps",
-        imageUrl: "https://images.unsplash.com/photo-1592833167578-28dedde37909?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        specifications: {
-          power: "3HP",
-          maxHead: "80m",
-          flow: "10,000L/hour",
-          material: "Stainless steel"
-        },
-        stock: 20,
-        featured: true
+  async initializeDatabase(): Promise<void> {
+    try {
+      // Check if users table is empty
+      const userCount = await db.select({ count: users.id }).from(users);
+      
+      if (userCount.length === 0 || userCount[0].count === 0) {
+        // Add default admin user
+        await this.createUser({
+          username: "admin",
+          password: "$2b$10$wZcXSTiRZmjN2jCWOUyxZuEhkYZM.Mjm2pGQTTAq.kmRZ1BK2rF/C", // password: admin123
+          email: "admin@limpiastech.com",
+          fullName: "Admin User",
+          role: "super_admin"
+        });
+        
+        // Seed products
+        const sampleProducts: InsertProduct[] = [
+          {
+            name: "Premium Solar Panel 400W",
+            description: "High-efficiency monocrystalline solar panel with 25-year performance warranty.",
+            price: 349.99,
+            category: "Solar Panels",
+            imageUrl: "https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            specifications: {
+              power: "400W",
+              efficiency: "21.5%",
+              cells: "144 half-cut monocrystalline cells",
+              dimensions: "2000 x 1000 x 35 mm"
+            },
+            stock: 50,
+            featured: true
+          },
+          {
+            name: "SmartInvert Pro 5kW",
+            description: "Hybrid solar inverter with battery backup capability and smart monitoring.",
+            price: 1299.99,
+            category: "Inverters",
+            imageUrl: "https://images.unsplash.com/photo-1613665813446-82a78c468a1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            specifications: {
+              power: "5kW",
+              efficiency: "98%",
+              mppt: "2 MPPT trackers",
+              warranty: "10 years"
+            },
+            stock: 25,
+            featured: true
+          },
+          {
+            name: "EcoHeat Solar 200L",
+            description: "Evacuated tube solar water heater with 200-liter capacity for residential use.",
+            price: 899.99,
+            category: "Water Heaters",
+            imageUrl: "https://images.unsplash.com/photo-1621267860478-dbad5e247732?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            specifications: {
+              capacity: "200L",
+              tubes: "20 evacuated tubes",
+              tank: "Stainless steel, insulated",
+              mountType: "Roof or ground mounted"
+            },
+            stock: 15,
+            featured: true
+          },
+          {
+            name: "SolarPump 3HP",
+            description: "3HP submersible solar water pump for agriculture and domestic applications.",
+            price: 749.99,
+            category: "Water Pumps",
+            imageUrl: "https://images.unsplash.com/photo-1592833167578-28dedde37909?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            specifications: {
+              power: "3HP",
+              maxHead: "80m",
+              flow: "10,000L/hour",
+              material: "Stainless steel"
+            },
+            stock: 20,
+            featured: true
+          }
+        ];
+        
+        for (const product of sampleProducts) {
+          await this.createProduct(product);
+        }
+        
+        // Seed blog posts
+        const sampleBlogPosts: InsertBlogPost[] = [
+          {
+            title: "The Benefits of Solar Energy for Residential Properties",
+            content: "Discover how installing solar panels can significantly reduce your electricity bills and increase your property value while contributing to a greener planet.",
+            imageUrl: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            authorId: 1,
+            isApproved: true
+          },
+          {
+            title: "How Solar Water Pumps Revolutionize Agriculture",
+            content: "Solar water pumps are changing the face of agriculture by providing reliable irrigation solutions that are both cost-effective and environmentally friendly.",
+            imageUrl: "https://images.unsplash.com/photo-1559302995-f8d7c620f2d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            authorId: 1,
+            isApproved: true
+          },
+          {
+            title: "Choosing the Right Solar Inverter for Your Home",
+            content: "Learn about the different types of solar inverters available and how to select the most suitable one for your specific energy needs and budget.",
+            imageUrl: "https://images.unsplash.com/photo-1497440001374-f26997328c1b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            authorId: 1,
+            isApproved: true
+          }
+        ];
+        
+        for (const post of sampleBlogPosts) {
+          await this.createBlogPost(post);
+        }
       }
-    ];
-    
-    sampleProducts.forEach(product => this.createProduct(product));
-    
-    // Seed some blog posts
-    const sampleBlogPosts: InsertBlogPost[] = [
-      {
-        title: "The Benefits of Solar Energy for Residential Properties",
-        content: "Discover how installing solar panels can significantly reduce your electricity bills and increase your property value while contributing to a greener planet.",
-        imageUrl: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        authorId: 1,
-        isApproved: true
-      },
-      {
-        title: "How Solar Water Pumps Revolutionize Agriculture",
-        content: "Solar water pumps are changing the face of agriculture by providing reliable irrigation solutions that are both cost-effective and environmentally friendly.",
-        imageUrl: "https://images.unsplash.com/photo-1559302995-f8d7c620f2d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        authorId: 1,
-        isApproved: true
-      },
-      {
-        title: "Choosing the Right Solar Inverter for Your Home",
-        content: "Learn about the different types of solar inverters available and how to select the most suitable one for your specific energy needs and budget.",
-        imageUrl: "https://images.unsplash.com/photo-1497440001374-f26997328c1b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
-        authorId: 1,
-        isApproved: true
-      }
-    ];
-    
-    sampleBlogPosts.forEach(post => this.createBlogPost(post));
+    } catch (error) {
+      console.error("Error initializing database:", error);
+    }
   }
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email,
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    const createdAt = new Date();
-    const newUser: User = { ...user, id, createdAt };
-    this.users.set(id, newUser);
+    const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
   
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
   
-  async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
-    const existingUser = await this.getUser(id);
-    if (!existingUser) return undefined;
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
     
-    const updatedUser = { ...existingUser, ...user };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    return updatedUser || undefined;
   }
   
   async deleteUser(id: number): Promise<boolean> {
-    return this.users.delete(id);
+    const result = await db.delete(users).where(eq(users.id, id));
+    return result.rowCount > 0;
   }
 
   // Product operations
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
   }
   
   async getAllProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
+    return await db.select().from(products);
   }
   
   async getProductsByCategory(category: string): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(
-      product => product.category === category
-    );
+    return await db.select().from(products).where(eq(products.category, category));
   }
   
   async getFeaturedProducts(): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(
-      product => product.featured
-    );
+    return await db.select().from(products).where(eq(products.featured, true));
   }
   
   async createProduct(product: InsertProduct): Promise<Product> {
-    const id = this.productCurrentId++;
-    const createdAt = new Date();
-    const updatedAt = createdAt;
-    const newProduct: Product = { ...product, id, createdAt, updatedAt };
-    this.products.set(id, newProduct);
+    const [newProduct] = await db.insert(products).values(product).returning();
     return newProduct;
   }
   
-  async updateProduct(id: number, product: Partial<Product>): Promise<Product | undefined> {
-    const existingProduct = await this.getProduct(id);
-    if (!existingProduct) return undefined;
+  async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
+    // Set updatedAt to current date
+    productData.updatedAt = new Date();
     
-    const updatedAt = new Date();
-    const updatedProduct = { ...existingProduct, ...product, updatedAt };
-    this.products.set(id, updatedProduct);
-    return updatedProduct;
+    const [updatedProduct] = await db.update(products)
+      .set(productData)
+      .where(eq(products.id, id))
+      .returning();
+    
+    return updatedProduct || undefined;
   }
   
   async deleteProduct(id: number): Promise<boolean> {
-    return this.products.delete(id);
+    const result = await db.delete(products).where(eq(products.id, id));
+    return result.rowCount > 0;
   }
 
   // Blog operations
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    return this.blogPosts.get(id);
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post || undefined;
   }
   
   async getAllBlogPosts(): Promise<BlogPost[]> {
-    return Array.from(this.blogPosts.values());
+    return await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
   }
   
   async getApprovedBlogPosts(): Promise<BlogPost[]> {
-    return Array.from(this.blogPosts.values()).filter(
-      post => post.isApproved
-    );
+    return await db.select().from(blogPosts)
+      .where(eq(blogPosts.isApproved, true))
+      .orderBy(desc(blogPosts.createdAt));
   }
   
   async createBlogPost(blogPost: InsertBlogPost): Promise<BlogPost> {
-    const id = this.blogPostCurrentId++;
-    const createdAt = new Date();
-    const updatedAt = createdAt;
-    const newBlogPost: BlogPost = { ...blogPost, id, createdAt, updatedAt };
-    this.blogPosts.set(id, newBlogPost);
+    const [newBlogPost] = await db.insert(blogPosts).values(blogPost).returning();
     return newBlogPost;
   }
   
-  async updateBlogPost(id: number, blogPost: Partial<BlogPost>): Promise<BlogPost | undefined> {
-    const existingBlogPost = await this.getBlogPost(id);
-    if (!existingBlogPost) return undefined;
+  async updateBlogPost(id: number, blogPostData: Partial<BlogPost>): Promise<BlogPost | undefined> {
+    // Set updatedAt to current date
+    blogPostData.updatedAt = new Date();
     
-    const updatedAt = new Date();
-    const updatedBlogPost = { ...existingBlogPost, ...blogPost, updatedAt };
-    this.blogPosts.set(id, updatedBlogPost);
-    return updatedBlogPost;
+    const [updatedBlogPost] = await db.update(blogPosts)
+      .set(blogPostData)
+      .where(eq(blogPosts.id, id))
+      .returning();
+    
+    return updatedBlogPost || undefined;
   }
   
   async deleteBlogPost(id: number): Promise<boolean> {
-    return this.blogPosts.delete(id);
+    const result = await db.delete(blogPosts).where(eq(blogPosts.id, id));
+    return result.rowCount > 0;
   }
 
   // Order operations
   async getOrder(id: number): Promise<Order | undefined> {
-    return this.orders.get(id);
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order || undefined;
   }
   
   async getAllOrders(): Promise<Order[]> {
-    return Array.from(this.orders.values());
+    return await db.select().from(orders).orderBy(desc(orders.createdAt));
   }
   
   async getUserOrders(userId: number): Promise<Order[]> {
-    return Array.from(this.orders.values()).filter(
-      order => order.userId === userId
-    );
+    return await db.select().from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
   }
   
   async createOrder(order: InsertOrder): Promise<Order> {
-    const id = this.orderCurrentId++;
-    const createdAt = new Date();
-    const newOrder: Order = { ...order, id, createdAt };
-    this.orders.set(id, newOrder);
+    const [newOrder] = await db.insert(orders).values(order).returning();
     return newOrder;
   }
   
-  async updateOrder(id: number, order: Partial<Order>): Promise<Order | undefined> {
-    const existingOrder = await this.getOrder(id);
-    if (!existingOrder) return undefined;
+  async updateOrder(id: number, orderData: Partial<Order>): Promise<Order | undefined> {
+    const [updatedOrder] = await db.update(orders)
+      .set(orderData)
+      .where(eq(orders.id, id))
+      .returning();
     
-    const updatedOrder = { ...existingOrder, ...order };
-    this.orders.set(id, updatedOrder);
-    return updatedOrder;
+    return updatedOrder || undefined;
   }
 
   // OrderItem operations
   async getOrderItems(orderId: number): Promise<OrderItem[]> {
-    return Array.from(this.orderItems.values()).filter(
-      item => item.orderId === orderId
-    );
+    return await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
   }
   
   async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {
-    const id = this.orderItemCurrentId++;
-    const newOrderItem: OrderItem = { ...orderItem, id };
-    this.orderItems.set(id, newOrderItem);
+    const [newOrderItem] = await db.insert(orderItems).values(orderItem).returning();
     return newOrderItem;
   }
 
   // Contact operations
   async createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission> {
-    const id = this.contactSubmissionCurrentId++;
-    const createdAt = new Date();
-    const isResolved = false;
-    const newSubmission: ContactSubmission = { ...submission, id, createdAt, isResolved };
-    this.contactSubmissions.set(id, newSubmission);
+    const [newSubmission] = await db.insert(contactSubmissions)
+      .values({ ...submission, isResolved: false })
+      .returning();
+    
     return newSubmission;
   }
   
   async getAllContactSubmissions(): Promise<ContactSubmission[]> {
-    return Array.from(this.contactSubmissions.values());
+    return await db.select().from(contactSubmissions).orderBy(desc(contactSubmissions.createdAt));
   }
   
   async updateContactSubmission(id: number, submission: Partial<ContactSubmission>): Promise<ContactSubmission | undefined> {
-    const existingSubmission = this.contactSubmissions.get(id);
-    if (!existingSubmission) return undefined;
+    const [updatedSubmission] = await db.update(contactSubmissions)
+      .set(submission)
+      .where(eq(contactSubmissions.id, id))
+      .returning();
     
-    const updatedSubmission = { ...existingSubmission, ...submission };
-    this.contactSubmissions.set(id, updatedSubmission);
-    return updatedSubmission;
+    return updatedSubmission || undefined;
   }
 
   // Newsletter operations
   async createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
     // Check if email already exists
-    const existingSubscription = Array.from(this.newsletterSubscriptions.values()).find(
-      sub => sub.email === subscription.email
-    );
+    const [existingSubscription] = await db.select().from(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.email, subscription.email));
     
     if (existingSubscription) return existingSubscription;
     
-    const id = this.newsletterSubscriptionCurrentId++;
-    const createdAt = new Date();
-    const newSubscription: NewsletterSubscription = { ...subscription, id, createdAt };
-    this.newsletterSubscriptions.set(id, newSubscription);
+    const [newSubscription] = await db.insert(newsletterSubscriptions)
+      .values(subscription)
+      .returning();
+    
     return newSubscription;
   }
   
   async getAllNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
-    return Array.from(this.newsletterSubscriptions.values());
+    return await db.select().from(newsletterSubscriptions);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
