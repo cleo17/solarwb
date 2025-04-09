@@ -11,6 +11,9 @@ import {
   insertContactSubmissionSchema,
   insertNewsletterSubscriptionSchema
 } from "@shared/schema";
+import { upload, processImage, getUploadedFileUrl } from "./uploads";
+import path from "path";
+import fs from "fs";
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -302,7 +305,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!paymentStatus) {
           return res.status(400).json({ message: "No payment status provided" });
         }
-        orderData = { paymentStatus };
+        // Create a new object instead of reassigning
+        const newOrderData = { paymentStatus };
+        return storage.updateOrder(id, newOrderData)
+          .then(order => {
+            if (!order) {
+              return res.status(404).json({ message: "Order not found" });
+            }
+            res.json(order);
+          });
       }
       
       const order = await storage.updateOrder(id, orderData);
@@ -379,6 +390,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(subscriptions);
     } catch (error) {
       res.status(500).json({ message: "Error fetching newsletter subscriptions" });
+    }
+  });
+
+  // Serve static files from the uploads directory
+  app.use('/uploads', (req, res, next) => {
+    const filePath = path.join(process.cwd(), 'public', req.url);
+    if (fs.existsSync(filePath) && !filePath.includes('..')) {
+      res.sendFile(filePath);
+    } else {
+      next();
+    }
+  });
+
+  // File upload routes
+  app.post('/api/upload/:uploadType', isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const uploadType = req.params.uploadType;
+      if (!['products', 'blog', 'profiles'].includes(uploadType)) {
+        return res.status(400).json({ message: 'Invalid upload type' });
+      }
+
+      // Process the image based on type
+      const filePath = req.file.path;
+      let options: { width?: number; height?: number; quality?: number } = { quality: 80 };
+      
+      if (uploadType === 'products') {
+        options = { width: 800, height: 800, quality: 80 };
+      } else if (uploadType === 'blog') {
+        options = { width: 1200, height: 800, quality: 80 };
+      } else if (uploadType === 'profiles') {
+        options = { width: 300, height: 300, quality: 80 };
+      }
+
+      const filename = await processImage(filePath, options);
+      const fileUrl = getUploadedFileUrl(filename, uploadType);
+
+      res.json({
+        message: 'File uploaded successfully',
+        filename: filename,
+        url: fileUrl
+      });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      res.status(500).json({ message: error.message || 'Error uploading file' });
+    }
+  });
+
+  // User profile routes
+  app.get('/api/profile', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Exclude sensitive information
+      const { password, ...userProfile } = user;
+      res.json(userProfile);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching user profile' });
+    }
+  });
+
+  app.put('/api/profile', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Allow updating only non-sensitive fields
+      const allowedFields = ['fullName', 'email', 'phone', 'profileImage', 'bio'];
+      const updateData: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (field in req.body) {
+          updateData[field] = req.body[field];
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: 'No valid fields to update' });
+      }
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Exclude sensitive information
+      const { password, ...userProfile } = updatedUser;
+      res.json(userProfile);
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating user profile' });
+    }
+  });
+
+  // Change password route
+  app.put('/api/profile/password', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Current password and new password are required' });
+      }
+
+      // Verify current password and update to new password
+      // This will be implemented in the auth service
+      const success = await storage.updatePassword(userId, currentPassword, newPassword);
+      if (!success) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating password' });
     }
   });
 

@@ -2,24 +2,15 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { z } from "zod";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
+import { hashPassword, comparePasswords } from "./auth-utils";
 
 declare global {
   namespace Express {
     interface User extends SelectUser {}
   }
-}
-
-async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
-}
-
-async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
-  return bcrypt.compare(supplied, stored);
 }
 
 export function setupAuth(app: Express) {
@@ -133,7 +124,7 @@ export function setupAuth(app: Express) {
 
   // Login endpoint
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
       

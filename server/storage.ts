@@ -13,6 +13,7 @@ import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import { hashPassword, comparePasswords } from "./auth-utils";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -64,15 +65,18 @@ export interface IStorage {
   createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
   getAllNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
   
+  // Password management
+  updatePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean>;
+
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any since the SessionStore type causes issues
   
   // Initialize the database schema and seed data
   initializeDatabase(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any since the SessionStore type causes issues
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
@@ -238,7 +242,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   // Product operations
@@ -278,7 +282,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteProduct(id: number): Promise<boolean> {
     const result = await db.delete(products).where(eq(products.id, id));
-    return result.rowCount > 0;
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   // Blog operations
@@ -316,7 +320,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteBlogPost(id: number): Promise<boolean> {
     const result = await db.delete(blogPosts).where(eq(blogPosts.id, id));
-    return result.rowCount > 0;
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   // Order operations
@@ -398,6 +402,30 @@ export class DatabaseStorage implements IStorage {
   
   async getAllNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
     return await db.select().from(newsletterSubscriptions);
+  }
+  
+  // Password management
+  async updatePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      // Get user with current password
+      const user = await this.getUser(userId);
+      if (!user) return false;
+      
+      // Check if current password matches
+      const isCurrentPasswordValid = await comparePasswords(currentPassword, user.password);
+      if (!isCurrentPasswordValid) return false;
+      
+      // Hash new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update password
+      await this.updateUser(userId, { password: hashedPassword });
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating password:', error);
+      return false;
+    }
   }
 }
 
