@@ -1,11 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, User, SunMedium, Menu, X } from "lucide-react";
+import { ShoppingCart, Search, User, SunMedium, Menu, X, LogOut } from "lucide-react";
 import MobileMenu from "./mobile-menu";
 import { Badge } from "@/components/ui/badge";
 import CartDrawer from "@/components/cart/cart-drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Header() {
   const [location] = useLocation();
@@ -58,7 +66,9 @@ export default function Header() {
     { path: "/contact", label: "Contact" },
   ];
   
-  const handleLogout = () => {
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     logoutMutation.mutate();
   };
   
@@ -122,33 +132,37 @@ export default function Header() {
           </Button>
           
           {user ? (
-            <div className="relative group">
-              <Button variant="ghost" size="icon" className="text-neutral-700 hover:text-primary">
-                <User className="h-5 w-5" />
-              </Button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
-                <div className="px-4 py-2 text-sm text-neutral-700 border-b border-neutral-100">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-neutral-700 hover:text-primary">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="font-normal">
                   Signed in as <span className="font-medium">{user.username}</span>
-                </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 
                 {['super_admin', 'blog_editor', 'sales_manager', 'accountant'].includes(user.role) && (
-                  <Link href="/admin" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100">
-                    Admin Dashboard
-                  </Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">Admin Dashboard</Link>
+                  </DropdownMenuItem>
                 )}
                 
-                <Link href="/orders" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100">
-                  My Orders
-                </Link>
+                <DropdownMenuItem asChild>
+                  <Link href="/orders">My Orders</Link>
+                </DropdownMenuItem>
                 
-                <button 
+                <DropdownMenuItem 
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+                  className="text-red-600 hover:text-red-700 cursor-pointer"
                 >
-                  Sign out
-                </button>
-              </div>
-            </div>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Link href="/auth">
               <Button variant="ghost" size="icon" className="text-neutral-700 hover:text-primary">

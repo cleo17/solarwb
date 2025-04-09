@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { User, ShoppingCart, Search } from 'lucide-react';
+import { User, ShoppingCart, Search, LogOut } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -22,11 +30,12 @@ export default function MobileMenu({
   onOpenCart
 }: MobileMenuProps) {
   const { user, logoutMutation } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
   
   if (!isOpen) return null;
   
-  const handleLogout = () => {
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     logoutMutation.mutate();
     onClose();
   };
@@ -68,60 +77,49 @@ export default function MobileMenu({
             )}
           </button>
           
-          <div className="relative">
-            <button 
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center text-neutral-700">
+                  <User className="mr-1 h-5 w-5" />
+                  <span>Account</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="font-normal">
+                  Signed in as <span className="font-medium">{user.username}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {['super_admin', 'blog_editor', 'sales_manager', 'accountant'].includes(user.role) && (
+                  <DropdownMenuItem onSelect={onClose} asChild>
+                    <Link href="/admin">Admin Dashboard</Link>
+                  </DropdownMenuItem>
+                )}
+                
+                <DropdownMenuItem onSelect={onClose} asChild>
+                  <Link href="/orders">My Orders</Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-red-600 hover:text-red-700 cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link 
+              href="/auth" 
+              onClick={onClose}
               className="flex items-center text-neutral-700"
-              onClick={() => setShowUserMenu(!showUserMenu)}
             >
               <User className="mr-1 h-5 w-5" />
-              <span>Account</span>
-            </button>
-            
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                {user ? (
-                  <>
-                    <div className="px-4 py-2 text-sm text-neutral-700 border-b border-neutral-100">
-                      Signed in as <span className="font-medium">{user.username}</span>
-                    </div>
-                    
-                    {['super_admin', 'blog_editor', 'sales_manager', 'accountant'].includes(user.role) && (
-                      <Link 
-                        href="/admin" 
-                        className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                        onClick={onClose}
-                      >
-                        Admin Dashboard
-                      </Link>
-                    )}
-                    
-                    <Link 
-                      href="/orders" 
-                      className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                      onClick={onClose}
-                    >
-                      My Orders
-                    </Link>
-                    
-                    <button 
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                    >
-                      Sign out
-                    </button>
-                  </>
-                ) : (
-                  <Link 
-                    href="/auth" 
-                    className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                    onClick={onClose}
-                  >
-                    Sign in / Register
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
+              <span>Sign in</span>
+            </Link>
+          )}
         </div>
       </div>
     </div>
