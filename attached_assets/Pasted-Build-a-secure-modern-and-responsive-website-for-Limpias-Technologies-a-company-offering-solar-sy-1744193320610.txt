@@ -1,0 +1,84 @@
+Build a secure, modern, and responsive website for Limpias Technologies, a company offering solar systems for homes and businesses, including solar panels, solar water heaters, solar water pumps, and inverters.
+
+1. Frontend Pages
+Create the following pages with a clean UI and good UX:
+
+Home: Hero banner, services summary, product highlights, testimonials, and call-to-action buttons.
+
+About Us: Company story, mission, vision, team, certifications, and values.
+
+Products:
+
+List all products in categories (solar panels, inverters, water heaters, etc.).
+
+Include product name, description, specs, price, image(s), and stock availability.
+
+Implement search, filtering, and sorting features.
+
+Enable Add to Cart, Wishlist, and Compare buttons.
+
+Services: Describe service offerings (installation, maintenance, consulting, etc.).
+
+Blog: Allow public to read blog posts; each post should support comments and social sharing.
+
+Contact Us: Include secure form (name, email, subject, message), Google Map, phone number, and social media links.
+
+2. Ecommerce Features
+User account creation (email/phone signup, login, password reset).
+
+Cart, checkout, order tracking, payment gateway integration (MPesa, PayPal, card).
+
+Email/SMS notifications for orders and updates.
+
+Order history and invoice download for users.
+
+3. Admin Panel (Backend)
+Develop a secure, role-based admin dashboard with the following user roles:
+
+🔒 Super Admin
+Approves or deactivates any user account.
+
+Manages all content: edits pages (e.g., Home, About), contact info, addresses, social links.
+
+Approves blog posts submitted by Editors.
+
+Can delete blog posts, users, products.
+
+Can export reports (sales, product list, customers).
+
+✍️ Blog Editor
+Can write, edit, and submit blog posts for approval.
+
+Cannot publish without Super Admin approval.
+
+🛍️ Sales Manager
+Adds and edits product listings, prices, images, descriptions.
+
+Manages product stock.
+
+Views orders, processes deliveries, handles discounts.
+
+🧾 Accountant
+Views and exports sales reports.
+
+Accesses customer invoices, payment status, and financial summaries.
+
+4. Security and Best Practices
+Use HTTPS, CSRF protection, secure JWT sessions, input sanitization, rate-limiting.
+
+All forms must have server-side validation.
+
+Audit logs for admin actions.
+
+2FA for admin and manager-level logins.
+
+5. Extra Features (Suggested)
+Newsletter signup with Mailchimp or similar.
+
+Product rating and customer reviews.
+
+Support ticket/contact request system for existing customers.
+
+Analytics dashboard (sales over time, best-selling products, website traffic).
+
+Mobile-first design using responsive frameworks.
