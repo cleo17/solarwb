@@ -26,14 +26,14 @@ export function Logo({ size = 'md', showTagline = false, className = '' }: LogoP
         <div className="relative mr-2">
           <svg width="40" height="30" viewBox="0 0 150 100" xmlns="http://www.w3.org/2000/svg" className={getSizeClass()}>
             {/* W shape */}
-            <path d="M30 20 L50 70 L75 40 L100 70 L120 20" stroke="currentColor" className="text-primary" strokeWidth="12" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            <path d="M30 20 L50 70 L75 40 L100 70 L120 20" stroke="#791e47" strokeWidth="12" fill="none" strokeLinejoin="round" strokeLinecap="round" />
             {/* Green accent line */}
-            <path d="M20 80 L130 80" stroke="currentColor" className="accent-text" strokeWidth="6" fill="none" strokeLinecap="round" />
+            <path d="M20 80 L130 80" stroke="#4cb92f" strokeWidth="6" fill="none" strokeLinecap="round" />
           </svg>
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-xl md:text-2xl text-primary">
-            Limpias <span className="accent-text">Technologies</span>
+          <span className="font-bold text-xl md:text-2xl">
+            <span className="text-primary">Limpias</span> <span className="accent-text">Technologies</span>
           </span>
           {showTagline && (
             <span className="text-sm italic text-gray-600">Expert in solar Energy</span>

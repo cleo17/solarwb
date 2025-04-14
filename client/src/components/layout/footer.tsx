@@ -1,6 +1,7 @@
 import { Link } from "wouter";
-import { SunMedium, Facebook, Twitter, Instagram, Linkedin, MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, MapPin, Phone, Mail, Clock } from "lucide-react";
 import NewsletterForm from "@/components/ui/newsletter-form";
+import { Logo } from "@/components/ui/logo";
 
 export default function Footer() {
   return (
@@ -10,12 +11,7 @@ export default function Footer() {
           <div>
             <div className="mb-6">
               <Link href="/" className="flex items-center">
-                <div className="flex items-center">
-                  <SunMedium className="text-primary mr-2" />
-                  <span className="font-heading font-bold text-xl text-white">
-                    Limpias<span className="text-primary">Tech</span>
-                  </span>
-                </div>
+                <Logo size="md" showTagline={true} className="text-white" />
               </Link>
               <p className="mt-4 text-neutral-400">
                 Providing sustainable solar solutions for homes and businesses. Harness the power of the sun with our innovative products and services.

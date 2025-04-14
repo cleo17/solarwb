@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --accent-green: #4CAF50;
+  --accent-green: #4cb92f;
 }
 
 @layer base {
