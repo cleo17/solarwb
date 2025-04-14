@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, User, SunMedium, Menu, X, LogOut } from "lucide-react";
+import { ShoppingCart, Search, User, Menu, X, LogOut } from "lucide-react";
 import MobileMenu from "./mobile-menu";
 import { Badge } from "@/components/ui/badge";
 import CartDrawer from "@/components/cart/cart-drawer";
+import { Logo } from "@/components/ui/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,12 +78,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
-            <div className="flex items-center">
-              <SunMedium className="text-primary mr-2" />
-              <span className="font-heading font-bold text-xl md:text-2xl text-neutral-800">
-                Limpias<span className="text-primary">Tech</span>
-              </span>
-            </div>
+            <Logo size="md" showTagline={false} />
           </Link>
         </div>
 
