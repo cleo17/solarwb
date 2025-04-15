@@ -13,17 +13,17 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Get existing cart from localStorage
     const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    
+
     // Check if product already exists in cart
     const existingItem = existingCart.find((item: any) => item.id === product.id);
-    
+
     if (existingItem) {
       // Update quantity
       existingItem.quantity += 1;
@@ -37,19 +37,19 @@ export default function ProductCard({ product }: ProductCardProps) {
         quantity: 1
       });
     }
-    
+
     // Save updated cart to localStorage
     localStorage.setItem('cart', JSON.stringify(existingCart));
-    
+
     // Dispatch event to notify other components
     window.dispatchEvent(new Event('cartUpdated'));
-    
+
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
     });
   };
-  
+
   return (
     <div 
       className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group"
@@ -122,7 +122,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </p>
         <div className="flex justify-between items-center">
           <span className="font-heading font-bold text-lg text-neutral-800">
-            ${product.price.toFixed(2)}
+            KES {(product.price * 130).toFixed(2)}
           </span>
           <Badge className={`${product.stock > 10 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
             {product.stock > 10 ? 'In Stock' : 'Low Stock'}

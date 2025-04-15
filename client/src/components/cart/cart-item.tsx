@@ -54,7 +54,7 @@ export default function CartItem({
       
       <div className="ml-4 flex-grow">
         <h4 className="font-heading font-medium text-neutral-800">{name}</h4>
-        <p className="text-primary font-bold">${price.toFixed(2)}</p>
+        <p className="text-primary font-bold">KES {(price * 130).toFixed(2)}</p>
       </div>
       
       <div className="flex items-center space-x-2 ml-4">

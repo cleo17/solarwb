@@ -224,7 +224,7 @@ export default function CartPage() {
                     <div className="flex justify-between items-center mb-6">
                       <span className="font-heading font-bold text-xl text-neutral-800">Total:</span>
                       <span className="font-heading font-bold text-xl text-primary">
-                        ${calculateTotal().toFixed(2)}
+                        KES {(calculateTotal() * 130).toFixed(2)}
                       </span>
                     </div>
                     

@@ -575,15 +575,15 @@ export default function CheckoutPage() {
                   <div className="space-y-2 mb-6">
                     <div className="flex justify-between">
                       <span className="text-neutral-600">Subtotal:</span>
-                      <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
+                      <span className="font-medium">KES {(calculateSubtotal() * 130).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-neutral-600">Shipping:</span>
-                      <span className="font-medium">${calculateShipping().toFixed(2)}</span>
+                      <span className="font-medium">KES {(calculateShipping() * 130).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-neutral-600">Tax (16%):</span>
-                      <span className="font-medium">${calculateTax().toFixed(2)}</span>
+                      <span className="font-medium">KES {(calculateTax() * 130).toFixed(2)}</span>
                     </div>
                   </div>
                   
