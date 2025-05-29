@@ -7,8 +7,10 @@ const app = express();
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: true, // Allow all origins in development
-  credentials: true // Allow credentials (cookies, authorization headers)
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://solartech.onrender.com'] // Add your Render domain
+    : true,
+  credentials: true
 }));
 
 app.use(express.json());
@@ -64,11 +66,10 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen(port, "127.0.0.1", () => {
+  const port = process.env.PORT || 5000;
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  
+  server.listen(Number(port), host, () => {
     log(`serving on port ${port}`);
   });
 })();
