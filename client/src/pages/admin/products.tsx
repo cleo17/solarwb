@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Product } from '@shared/schema';
-import { PlusCircle, Loader2, Edit, Trash2, ImagePlus } from 'lucide-react';
+import { PlusCircle, Loader2, Edit, Trash2, ImagePlus, Upload } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 
 const CATEGORIES = [
@@ -46,6 +46,7 @@ export default function AdminProducts() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -221,6 +222,46 @@ export default function AdminProducts() {
   
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleFileUpload = async (file: File) => {
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/products', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, imageUrl: data.url }));
+      
+      toast({
+        title: 'Success',
+        description: 'Image uploaded and processed successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to upload image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  const handleImageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
   
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -484,8 +525,8 @@ export default function AdminProducts() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <div className="flex">
+                <Label htmlFor="imageUrl">Product Image</Label>
+                <div className="flex gap-2">
                   <Input 
                     id="imageUrl" 
                     name="imageUrl" 
@@ -494,21 +535,36 @@ export default function AdminProducts() {
                     placeholder="https://example.com/image.jpg" 
                     className="flex-1"
                   />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="ml-2" 
-                    onClick={() => {
-                      // Future enhancement: image upload
-                      toast({
-                        title: 'Image upload',
-                        description: 'Image upload functionality will be added soon.',
-                      });
-                    }}
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="relative"
+                      disabled={isUploading}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={handleImageInput}
+                        disabled={isUploading}
+                      />
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                    {formData.imageUrl && (
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => window.open(formData.imageUrl, '_blank')}
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Upload an image or provide a URL. Images will be automatically resized to 800x800px.
+                </p>
               </div>
               
               <div className="space-y-4">
@@ -677,30 +733,46 @@ export default function AdminProducts() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit-imageUrl">Image URL</Label>
-                <div className="flex">
+                <Label htmlFor="edit-imageUrl">Product Image</Label>
+                <div className="flex gap-2">
                   <Input 
                     id="edit-imageUrl" 
                     name="imageUrl" 
                     value={formData.imageUrl} 
                     onChange={handleInputChange} 
+                    placeholder="https://example.com/image.jpg" 
                     className="flex-1"
                   />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="ml-2" 
-                    onClick={() => {
-                      // Future enhancement: image upload
-                      toast({
-                        title: 'Image upload',
-                        description: 'Image upload functionality will be added soon.',
-                      });
-                    }}
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="relative"
+                      disabled={isUploading}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={handleImageInput}
+                        disabled={isUploading}
+                      />
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                    {formData.imageUrl && (
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => window.open(formData.imageUrl, '_blank')}
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Upload an image or provide a URL. Images will be automatically resized to 800x800px.
+                </p>
               </div>
               
               <div className="space-y-4">

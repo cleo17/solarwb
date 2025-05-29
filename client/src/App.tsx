@@ -14,6 +14,7 @@ import ContactPage from "@/pages/contact-page";
 import CartPage from "@/pages/cart-page";
 import CheckoutPage from "@/pages/checkout-page";
 import AuthPage from "@/pages/auth-page";
+import ProfilePage from "@/pages/profile";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -21,6 +22,7 @@ import AdminProducts from "@/pages/admin/products";
 import AdminBlogPosts from "@/pages/admin/blog-posts";
 import AdminOrders from "@/pages/admin/orders";
 import AdminUsers from "@/pages/admin/users";
+import AdminSettings from "@/pages/admin/settings";
 
 function Router() {
   return (
@@ -36,6 +38,7 @@ function Router() {
       <Route path="/cart" component={CartPage} />
       <ProtectedRoute path="/checkout" component={CheckoutPage} />
       <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       
       {/* Admin Routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />
@@ -43,6 +46,7 @@ function Router() {
       <ProtectedRoute path="/admin/blog-posts" component={AdminBlogPosts} />
       <ProtectedRoute path="/admin/orders" component={AdminOrders} />
       <ProtectedRoute path="/admin/users" component={AdminUsers} />
+      <ProtectedRoute path="/admin/settings" component={AdminSettings} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -98,7 +98,7 @@ export class DatabaseStorage implements IStorage {
         // Add default admin user
         await this.createUser({
           username: "admin",
-          password: "$2b$10$YQIiU/lMw59BirWSCjfQHOC/tbsMu96vP536DZPiw8o5hcPdjng/W", // password: admin123
+          password: "2ed7f15ea393dcddc0ce237e091e733061568e1f7645d70e106b4ff10b619e4aea8a7d89cad87da1fdfda6cf498f875ff028dfae9988ddda8ae2a31258dc5be9.d0809e318a9e8e003a7748bfe512b77e", // password: admin123
           email: "admin@limpiastech.com",
           fullName: "Admin User",
           role: "super_admin"

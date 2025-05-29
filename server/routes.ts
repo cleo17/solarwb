@@ -14,6 +14,7 @@ import {
 import { upload, processImage, getUploadedFileUrl } from "./uploads";
 import path from "path";
 import fs from "fs";
+import settingsPath from 'path';
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -42,6 +43,80 @@ const hasRole = (roles: string[]) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+  
+  // Settings endpoints
+  const SETTINGS_FILE = settingsPath.join(process.cwd(), 'server', 'settings.json');
+  const defaultSettings = {
+    siteName: 'Limpias Technologies',
+    siteDescription: 'Your trusted partner in solar technology solutions',
+    contactEmail: 'contact@limpiastech.com',
+    contactPhone: '+1234567890',
+    maintenanceMode: false,
+    enableBlog: true,
+    enableShop: true,
+  };
+
+  // GET /api/settings
+  app.get('/api/settings', isAuthenticated, hasRole(['super_admin']), async (req, res) => {
+    try {
+      let settings = defaultSettings;
+      if (fs.existsSync(SETTINGS_FILE)) {
+        const file = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+        settings = JSON.parse(file);
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: 'Error loading settings' });
+    }
+  });
+
+  // PUT /api/settings
+  app.put('/api/settings', isAuthenticated, hasRole(['super_admin']), async (req, res) => {
+    try {
+      const {
+        siteName,
+        siteDescription,
+        contactEmail,
+        contactPhone,
+        maintenanceMode,
+        enableBlog,
+        enableShop,
+      } = req.body;
+      // Basic validation
+      if (!siteName || !contactEmail) {
+        return res.status(400).json({ message: 'Site name and contact email are required.' });
+      }
+      const newSettings = {
+        siteName,
+        siteDescription: siteDescription || '',
+        contactEmail,
+        contactPhone: contactPhone || '',
+        maintenanceMode: !!maintenanceMode,
+        enableBlog: !!enableBlog,
+        enableShop: !!enableShop,
+      };
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(newSettings, null, 2), 'utf-8');
+      res.json(newSettings);
+    } catch (error) {
+      res.status(500).json({ message: 'Error saving settings' });
+    }
+  });
+  
+  // Public GET /api/public-settings (no auth)
+  app.get('/api/public-settings', async (req, res) => {
+    try {
+      let settings = defaultSettings;
+      if (fs.existsSync(SETTINGS_FILE)) {
+        const file = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+        settings = JSON.parse(file);
+      }
+      // Only return public fields
+      const { siteName, siteDescription, contactEmail, contactPhone } = settings;
+      res.json({ siteName, siteDescription, contactEmail, contactPhone });
+    } catch (error) {
+      res.status(500).json({ message: 'Error loading public settings' });
+    }
+  });
   
   // Products routes
   app.get("/api/products", async (req, res) => {
