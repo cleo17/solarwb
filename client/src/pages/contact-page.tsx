@@ -105,7 +105,7 @@ export default function ContactPage() {
                         <div>
                           <h3 className="font-heading font-bold text-lg text-neutral-800 mb-1">Our Location</h3>
                           <p className="text-neutral-600">
-                            123 Solar Avenue, Energy District<br />
+                            2nd floor, professional center, ngong-rd,<br />
                             Nairobi, Kenya
                           </p>
                         </div>
@@ -118,8 +118,8 @@ export default function ContactPage() {
                         <div>
                           <h3 className="font-heading font-bold text-lg text-neutral-800 mb-1">Phone Number</h3>
                           <p className="text-neutral-600">
-                            +254 700 123 456<br />
-                            +254 720 789 012
+                            +254 712 057 055<br />
+                            +254 787 131 606
                           </p>
                         </div>
                       </div>
@@ -131,8 +131,8 @@ export default function ContactPage() {
                         <div>
                           <h3 className="font-heading font-bold text-lg text-neutral-800 mb-1">Email Address</h3>
                           <p className="text-neutral-600">
-                            info@limpiastech.com<br />
-                            support@limpiastech.com
+                            info@limpias.co.ke<br />
+                            support@limpias.co.ke
                           </p>
                         </div>
                       </div>

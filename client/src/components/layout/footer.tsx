@@ -62,15 +62,15 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin className="text-primary mr-3 h-5 w-5 mt-0.5" />
-                <span className="text-neutral-400">123 Solar Avenue, Energy District, Nairobi, Kenya</span>
+                <span className="text-neutral-400">2nd floor, professional center, ngong-rd, Nairobi, Kenya</span>
               </li>
               <li className="flex items-center">
                 <Phone className="text-primary mr-3 h-5 w-5" />
-                <span className="text-neutral-400">+254 700 123 456</span>
+                <span className="text-neutral-400">+254 712 057 055</span>
               </li>
               <li className="flex items-center">
                 <Mail className="text-primary mr-3 h-5 w-5" />
-                <span className="text-neutral-400">info@limpiastech.com</span>
+                <span className="text-neutral-400">info@limpias.co.ke</span>
               </li>
               <li className="flex items-center">
                 <Clock className="text-primary mr-3 h-5 w-5" />
